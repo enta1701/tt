@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Popup Lịch Mobile</title>
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#007bff" />
+<style>
+  body { font-family: sans-serif; margin: 0; padding: 0; }
+  #open-calendar-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1001;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 56px;
+    height: 56px;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+  }
+  #popup-calendar {
+    display: none;
+    position: fixed;
+    bottom: 90px;
+    right: 20px;
+    width: 320px;
+    max-width: 90vw;
+    border: 1px solid #ccc;
+    background: white;
+    box-shadow: 0 0 12px rgba(0,0,0,0.3);
+    padding: 10px;
+    font-family: sans-serif;
+    z-index: 1000;
+    border-radius: 8px;
+  }
+  #close-calendar-btn {
+    float: right;
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+  }
+  thead tr {
+    background: #f2f2f2;
+  }
+  th, td {
+    border: 1px solid #ccc;
+    padding: 5px;
+  }
+  td.today {
+    background: #ffd;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+
+<button id="open-calendar-btn" title="Mở lịch">📅</button>
+
+<div id="popup-calendar">
+  <button id="close-calendar-btn" title="Đóng lịch">×</button>
+  <h3 id="cw-title" style="text-align:center; margin-top: 0;"></h3>
+  <div style="text-align:center; margin: 10px 0;">
+    <button onclick="cwChangeMonth(-1)">‹</button>
+    <select id="cw-year-select" onchange="cwChangeYear()"></select>
+    <button onclick="cwChangeMonth(1)">›</button>
+  </div>
+  <table>
+    <thead>
+      <tr><th>CN</th><th>T2</th><th>T3</th><th>T4</th><th>T5</th><th>T6</th><th>T7</th></tr>
+    </thead>
+    <tbody id="cw-body"></tbody>
+  </table>
+</div>
+
+<script>
+  const popup = document.getElementById('popup-calendar');
+  const openBtn = document.getElementById('open-calendar-btn');
+  const closeBtn = document.getElementById('close-calendar-btn');
+
+  openBtn.onclick = () => popup.style.display = 'block';
+  closeBtn.onclick = () => popup.style.display = 'none';
+
+  let cwMonth = new Date().getMonth();
+  let cwYear = new Date().getFullYear();
+  const cwNames = ["Tháng 1","Tháng 2","Tháng 3","Tháng 4","Tháng 5","Tháng 6",
+                   "Tháng 7","Tháng 8","Tháng 9","Tháng 10","Tháng 11","Tháng 12"];
+
+  function cwRenderCalendar() {
+    if(cwYear < 2025) cwYear = 2025;
+    if(cwYear > 2030) cwYear = 2030;
+
+    const firstDay = new Date(cwYear, cwMonth, 1).getDay();
+    const daysInMonth = new Date(cwYear, cwMonth + 1, 0).getDate();
+
+    document.getElementById("cw-title").innerText = `${cwNames[cwMonth]} ${cwYear}`;
+    document.getElementById("cw-year-select").value = cwYear;
+
+    let body = "";
+    let date = 1;
+    for(let i=0; i<6; i++){
+      let row = "<tr>";
+      for(let j=0; j<7; j++){
+        if(i === 0 && j < firstDay) {
+          row += "<td></td>";
+        } else if(date > daysInMonth){
+          row += "<td></td>";
+        } else {
+          const today = new Date();
+          const isToday = (cwYear === today.getFullYear() && cwMonth === today.getMonth() && date === today.getDate());
+          row += `<td${isToday ? ' class="today"' : ''}>${date}</td>`;
+          date++;
+        }
+      }
+      row += "</tr>";
+      body += row;
+      if(date > daysInMonth) break;
+    }
+    document.getElementById("cw-body").innerHTML = body;
+  }
+
+  function cwChangeMonth(offset){
+    cwMonth += offset;
+    if(cwMonth < 0){
+      cwMonth = 11;
+      cwYear--;
+    } else if(cwMonth > 11){
+      cwMonth = 0;
+      cwYear++;
+    }
+    cwRenderCalendar();
+  }
+
+  function cwChangeYear(){
+    cwYear = parseInt(document.getElementById("cw-year-select").value);
+    cwRenderCalendar();
+  }
+
+  function cwInitYearSelect(){
+    const select = document.getElementById("cw-year-select");
+    for(let y=2025; y<=2030; y++){
+      const option = document.createElement("option");
+      option.value = y;
+      option.textContent = y;
+      select.appendChild(option);
+    }
+  }
+
+  cwInitYearSelect();
+  cwRenderCalendar();
+
+  if('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').then(() => {
+      console.log('Service Worker registered');
+    });
+  }
+</script>
+
+</body>
+</html>
